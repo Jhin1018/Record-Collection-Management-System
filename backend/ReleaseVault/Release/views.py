@@ -866,3 +866,62 @@ class WantlistView(APIView):
                 'code': 500,
                 'error': str(e)
             })
+
+    def delete(self, request):
+        """Remove from wantlist"""
+        try:
+            json_str = request.body
+            json_obj = json.loads(json_str)
+            user_id = json_obj.get('user_id')
+            wantlist_id = json_obj.get('wantlist_id')
+
+            # Validate required parameters
+            if not user_id or not wantlist_id:
+                return JsonResponse({
+                    'code': 400,
+                    'error': 'user_id and wantlist_id are required'
+                })
+
+            # Check if user exists
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return JsonResponse({
+                    'code': 404,
+                    'error': 'User not found'
+                })
+
+            # Check if wantlist record exists and belongs to user
+            try:
+                wantlist = Wantlist.objects.get(id=wantlist_id, user_id=user_id)
+                # Save wantlist info for response
+                wantlist_info = {
+                    'wantlist_id': wantlist.id,
+                    'release': {
+                        'id': wantlist.release.id,
+                        'title': wantlist.release.title,
+                        'artist': wantlist.release.artist.artist_name if wantlist.release.artist else None,
+                        'year': wantlist.release.release_year,
+                        'format': wantlist.release.format
+                    },
+                    'note': wantlist.note,
+                    'added_date': wantlist.added_date.strftime('%Y-%m-%d %H:%M:%S')
+                }
+                # Delete wantlist record
+                wantlist.delete()
+                return JsonResponse({
+                    'code': 200,
+                    'message': 'Wantlist item removed successfully',
+                    'data': wantlist_info
+                })
+            except Wantlist.DoesNotExist:
+                return JsonResponse({
+                    'code': 404,
+                    'error': 'Wantlist item not found or does not belong to this user'
+                })
+
+        except Exception as e:
+            return JsonResponse({
+                'code': 500,
+                'error': str(e)
+            })
