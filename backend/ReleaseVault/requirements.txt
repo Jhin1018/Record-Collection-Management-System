@@ -20,6 +20,7 @@ djangorestframework==3.13.1
 filelock==3.4.0
 Flask==2.0.2
 future==0.18.2
+discogs-client
 gevent
 greenlet==1.1.2
 idna==3.3
