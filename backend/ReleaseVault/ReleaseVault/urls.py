@@ -25,4 +25,6 @@ urlpatterns = [
     path('api/v1/core', include('Core_Configuration.urls')),
     path('api/v1/user', include('User.urls')),
     path('api/v1/release', include('Release.urls')),
+    path('api/v1/data', include('Data_Statistics.urls')),   
+    path('api/v1/artist', include('Artist.urls')),
 ]
