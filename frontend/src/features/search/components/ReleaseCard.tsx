@@ -22,10 +22,21 @@ const ReleaseCard = ({ item }: ReleaseCardProps) => {
     ? `${item.artist} - ${item.title}` 
     : item.title;
   
-  const handleCardClick = () => {
-    // 点击卡片，查看详情
-    navigate(`/search/release/${item.id}`);
-  };
+    const handleCardClick = () => {
+        // 根据项目类型跳转到不同的详情页
+        switch(item.type) {
+          case 'master':
+            navigate(`/search/master/${item.id}`);
+            break;
+          case 'artist':
+            navigate(`/search/artist/${item.id}`);
+            break;
+          case 'release':
+          default:
+            navigate(`/search/release/${item.id}`);
+            break;
+        }
+      };
 
   return (
     <Card 

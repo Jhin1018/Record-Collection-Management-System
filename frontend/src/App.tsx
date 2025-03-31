@@ -10,8 +10,11 @@ import { ProtectedRoute } from './features/auth/components/ProtectedRoute';
 // 页面导入
 import LoginPage from './features/auth/pages/LoginPage';
 import RegisterPage from './features/auth/pages/RegisterPage';
-
 import SearchPage from './features/search/pages/SearchPage';
+
+import ReleaseDetailPage from './features/search/pages/ReleaseDetailPage';
+import MasterDetailPage from './features/search/pages/MasterDetailPage';
+import ArtistDetailPage from './features/search/pages/ArtistDetailPage';
 
 // 创建一个 React Query 客户端
 const queryClient = new QueryClient({
@@ -52,6 +55,12 @@ function App() {
                 {/* 公共路由 */}
                 <Route index element={<SearchPage />} />
                 <Route path="search/:query?" element={<SearchPage />} />
+                
+                {/* 详情页路由 - 公共可访问 */}
+                <Route path="search/release/:id" element={<ReleaseDetailPage />} />
+                <Route path="search/master/:id" element={<MasterDetailPage />} />
+                <Route path="search/artist/:id" element={<ArtistDetailPage />} />
+                
                 <Route path="login" element={<LoginPage />} />
                 <Route path="register" element={<RegisterPage />} />
                 
