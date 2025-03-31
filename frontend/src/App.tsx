@@ -11,6 +11,8 @@ import { ProtectedRoute } from './features/auth/components/ProtectedRoute';
 import LoginPage from './features/auth/pages/LoginPage';
 import RegisterPage from './features/auth/pages/RegisterPage';
 
+import SearchPage from './features/search/pages/SearchPage';
+
 // 创建一个 React Query 客户端
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,7 +25,6 @@ const queryClient = new QueryClient({
 
 // 页面组件导入（暂时用占位符，后续会替换为实际组件）
 // 公共页面
-const Search = () => <div>搜索页面 (首页)</div>;
 
 // 受保护页面
 const Collection = () => <div>收藏页</div>;
@@ -49,8 +50,8 @@ function App() {
             <Routes>
               <Route path="/" element={<MainLayout />}>
                 {/* 公共路由 */}
-                <Route index element={<Search />} />
-                <Route path="search/:query?" element={<Search />} />
+                <Route index element={<SearchPage />} />
+                <Route path="search/:query?" element={<SearchPage />} />
                 <Route path="login" element={<LoginPage />} />
                 <Route path="register" element={<RegisterPage />} />
                 
