@@ -122,10 +122,19 @@ export interface MasterDetails {
     position: string;
     title: string;
     duration: string;
+    artists?: Array<{
+      name: string;
+      id: number;
+      resource_url: string;
+    }>;
   }>;
+  notes?: string;
   main_release: number;
   main_release_url: string;
-  versions_url: string;
+  versions_count: number;
+  uri: string;
+  resource_url: string;
+  data_quality: string;
 }
 
 export interface ArtistDetails {

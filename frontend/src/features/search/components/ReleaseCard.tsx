@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { SearchResult } from '../../../services/discogsApi';
+import { Public as PublicIcon, Event as EventIcon } from '@mui/icons-material';
 
 interface ReleaseCardProps {
   item: SearchResult;
@@ -22,28 +23,28 @@ const ReleaseCard = ({ item }: ReleaseCardProps) => {
     ? `${item.artist} - ${item.title}` 
     : item.title;
   
-    const handleCardClick = () => {
-        // 根据项目类型跳转到不同的详情页
-        switch(item.type) {
-          case 'master':
-            navigate(`/search/master/${item.id}`);
-            break;
-          case 'artist':
-            navigate(`/search/artist/${item.id}`);
-            break;
-          case 'release':
-          default:
-            navigate(`/search/release/${item.id}`);
-            break;
-        }
-      };
+  const handleCardClick = () => {
+    // 根据项目类型跳转到不同的详情页
+    switch(item.type) {
+      case 'master':
+        navigate(`/search/master/${item.id}`);
+        break;
+      case 'artist':
+        navigate(`/search/artist/${item.id}`);
+        break;
+      case 'release':
+      default:
+        navigate(`/search/release/${item.id}`);
+        break;
+    }
+  };
 
   return (
     <Card 
       sx={{ 
         display: 'flex',
         flexDirection: 'column',
-        height: 320,
+        height: 360,
         width: '100%',
         maxWidth: '100%',
         transition: 'transform 0.2s',
@@ -99,7 +100,7 @@ const ReleaseCard = ({ item }: ReleaseCardProps) => {
               WebkitLineClamp: '4',
               WebkitBoxOrient: 'vertical',
               lineHeight: 1.2,
-              minHeight: '2.4em',
+              minHeight: '1.2em',
               maxHeight: '4.8em',
               width: 200,
               wordBreak: 'break-word',
@@ -109,13 +110,22 @@ const ReleaseCard = ({ item }: ReleaseCardProps) => {
             {title}
           </Typography>
           
+          {/* 保留原有的年份显示 */}
           {item.year && (
             <Typography variant="body2" color="text.secondary">
               {item.year}
             </Typography>
           )}
           
-          <Box sx={{ mt: 1, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+          {/* 标签组 - 保持每类显示两个，添加国家和年份作为新的标签类型 */}
+          <Box sx={{ 
+            mt: 1, 
+            display: 'flex', 
+            gap: 0.5, 
+            flexWrap: 'wrap' ,
+            width: 200
+          }}>
+            {/* 流派标签 */}
             {item.genre?.slice(0, 2).map((genre) => (
               <Chip 
                 key={genre} 
@@ -125,7 +135,9 @@ const ReleaseCard = ({ item }: ReleaseCardProps) => {
                 sx={{ fontSize: '0.7rem' }}
               />
             ))}
-            {item.format?.slice(0, 1).map((format) => (
+            
+            {/* 格式标签 */}
+            {item.format?.slice(0, 2).map((format) => (
               <Chip 
                 key={format} 
                 label={format} 
@@ -135,6 +147,19 @@ const ReleaseCard = ({ item }: ReleaseCardProps) => {
                 sx={{ fontSize: '0.7rem' }}
               />
             ))}
+            
+            {/* 国家标签 - 新增 */}
+            {item.country && (
+              <Chip 
+                icon={<PublicIcon sx={{ fontSize: '0.9rem' }} />}
+                label={item.country} 
+                size="small"
+                variant="outlined"
+                color="primary"
+                sx={{ fontSize: '0.7rem' }}
+              />
+            )}
+            
           </Box>
         </CardContent>
       </CardActionArea>

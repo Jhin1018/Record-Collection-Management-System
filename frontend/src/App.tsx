@@ -15,6 +15,7 @@ import SearchPage from './features/search/pages/SearchPage';
 import ReleaseDetailPage from './features/search/pages/ReleaseDetailPage';
 import MasterDetailPage from './features/search/pages/MasterDetailPage';
 import ArtistDetailPage from './features/search/pages/ArtistDetailPage';
+import MasterVersionsPage from './features/search/pages/MasterVersionsPage';
 
 // 创建一个 React Query 客户端
 const queryClient = new QueryClient({
@@ -59,6 +60,7 @@ function App() {
                 {/* 详情页路由 - 公共可访问 */}
                 <Route path="search/release/:id" element={<ReleaseDetailPage />} />
                 <Route path="search/master/:id" element={<MasterDetailPage />} />
+                <Route path="search/master/:id/versions" element={<MasterVersionsPage />} />
                 <Route path="search/artist/:id" element={<ArtistDetailPage />} />
                 
                 <Route path="login" element={<LoginPage />} />
