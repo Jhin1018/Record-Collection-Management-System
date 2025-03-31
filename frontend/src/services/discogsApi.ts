@@ -142,6 +142,18 @@ export interface ArtistDetails {
   name: string;
   realname?: string;
   profile?: string;
+  urls?: string[];
+  namevariations?: string[];
+  members?: Array<{
+    id: number;
+    name: string;
+    resource_url: string;
+  }>;
+  groups?: Array<{
+    id: number;
+    name: string;
+    resource_url: string;
+  }>;
   images?: Array<{
     type: string;
     uri: string;
@@ -150,12 +162,37 @@ export interface ArtistDetails {
     width: number;
     height: number;
   }>;
-  urls?: string[];
-  members?: Array<{
+  data_quality: string;
+  uri: string;
+  resource_url: string;
+}
+
+export interface ArtistReleases {
+  pagination: {
+    page: number;
+    pages: number;
+    per_page: number;
+    items: number;
+    urls: {
+      last?: string;
+      next?: string;
+      prev?: string;
+      first?: string;
+    };
+  };
+  releases: Array<{
     id: number;
-    name: string;
+    title: string;
+    type: string;
+    main_release?: number;
+    artist: string;
+    role?: string;
     resource_url: string;
-    active: boolean;
+    thumb: string;
+    year?: number;
+    format?: string;
+    genre?: string;
+    style?: string;
   }>;
 }
 
