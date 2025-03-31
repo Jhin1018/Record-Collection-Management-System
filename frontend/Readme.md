@@ -66,12 +66,12 @@ spinarchive/
 │   │   └── market/         # Market data integration
 │   │
 │   ├── styles/             # Global styling
-│   │   ├── theme.js        # MUI theme configuration
+│   │   ├── theme.ts        # MUI theme configuration
 │   │   └── global.css      # Base styles
 │   │
 │   ├── utils/              # Helper functions
-│   ├── App.jsx             # Root component
-│   └── main.jsx            # Entry point
+│   ├── App.tsx             # Root component
+│   └── main.tsx            # Entry point
 │
 ├── .env.example            # Environment template
 └── package.json
@@ -106,61 +106,6 @@ VITE_DISCOGS_KEY="your_client_key"
 VITE_DISCOGS_SECRET="your_client_secret"
 ```
 
-## 🎨 UI Implementation
-
-### Theme Configuration
-```js
-// styles/theme.js
-import { createTheme } from '@mui/material/styles';
-
-export default createTheme({
-  palette: {
-    mode: 'dark',
-    primary: { main: '#1a1a1a' },
-    secondary: { main: '#ffffff' },
-    background: { default: '#121212' }
-  },
-  typography: {
-    fontFamily: '"Helvetica Neue", Arial, sans-serif'
-  }
-});
-```
-
-### Styled Components
-```jsx
-// components/forms/SearchField.jsx
-import styled from '@emotion/styled';
-import { TextField } from '@mui/material';
-
-const CustomSearchField = styled(TextField)(({ theme }) => ({
-  '& .MuiOutlinedInput-root': {
-    borderRadius: '25px',
-    backgroundColor: theme.palette.background.paper,
-  },
-  width: '100%',
-  maxWidth: '600px'
-}));
-```
-
-### Chart Integration
-```jsx
-// components/charts/GenrePieChart.jsx
-import { Pie } from 'react-chartjs-2';
-
-const GenrePieChart = ({ data }) => (
-  <div style={{ maxWidth: '400px' }}>
-    <Pie
-      data={data}
-      options={{
-        plugins: {
-          legend: { position: 'right' },
-          tooltip: { enabled: false }
-        }
-      }}
-    />
-  </div>
-);
-```
 
 ## 📜 License
 
