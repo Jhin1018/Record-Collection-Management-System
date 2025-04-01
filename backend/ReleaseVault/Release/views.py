@@ -207,9 +207,13 @@ class CollectionView(APIView):
             ).first()
 
             if existing_collection:
+                # Update quantity of existing collection
+                existing_collection.quantity += quantity
+                existing_collection.save()
+                
                 return JsonResponse({
-                    'code': 400,
-                    'error': 'You have already collected this release',
+                    'code': 200,
+                    'message': 'Collection quantity updated successfully',
                     'data': {
                         'collection_id': existing_collection.id,
                         'release': {
@@ -303,15 +307,16 @@ class CollectionView(APIView):
                 'description': description
             }
 
-            # If purchase date provided, use provided date
+            # Handle purchase date
             if purchase_date:
                 try:
                     collection_data['purchase_date'] = datetime.strptime(purchase_date, '%Y-%m-%d %H:%M:%S')
                 except ValueError:
-                    return JsonResponse({
-                        'code': 400,
-                        'error': 'Invalid purchase_date format. Use YYYY-MM-DD HH:MM:SS'
-                    })
+                    # If date format is invalid, use current time
+                    collection_data['purchase_date'] = datetime.now()
+            else:
+                # If no date provided, use current time
+                collection_data['purchase_date'] = datetime.now()
 
             collection = Collection.objects.create(**collection_data)
 
@@ -329,7 +334,7 @@ class CollectionView(APIView):
                     },
                     'quantity': collection.quantity,
                     'purchase_price': str(collection.purchase_price),
-                    'purchase_date': collection.purchase_date.strftime('%Y-%m-%d %H:%M:%S'),
+                    'purchase_date': collection.purchase_date.strftime('%Y-%m-%d %H:%M:%S') if collection.purchase_date else None,
                     'description': collection.description
                 }
             })
