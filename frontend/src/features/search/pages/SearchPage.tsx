@@ -63,7 +63,7 @@ const SearchPage = () => {
     <Container maxWidth="xl">
       <Box sx={{ mb: 4, mt: 2, textAlign: 'center' }}>
         <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
-          Search Discogs Records
+          Search Records
         </Typography>
         <Typography variant="subtitle1" color="text.secondary">
           Find vinyl records, CDs, cassettes and more from the Discogs database

@@ -89,7 +89,7 @@ const AppHeader = () => {
         alignItems: 'center',
       }}
     >
-      SpinArchive 🎵
+      SpinArchive 💿
     </Typography>
   );
 

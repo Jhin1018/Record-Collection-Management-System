@@ -1,4 +1,4 @@
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import { ThemeProvider, CssBaseline, Container, Typography, Box, Paper } from '@mui/material';
 import { RouterProvider, createBrowserRouter, Outlet, BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import theme from './styles/theme';
@@ -11,7 +11,6 @@ import { ProtectedRoute } from './features/auth/components/ProtectedRoute';
 import LoginPage from './features/auth/pages/LoginPage';
 import RegisterPage from './features/auth/pages/RegisterPage';
 import SearchPage from './features/search/pages/SearchPage';
-
 import ReleaseDetailPage from './features/search/pages/ReleaseDetailPage';
 import MasterDetailPage from './features/search/pages/MasterDetailPage';
 import ArtistDetailPage from './features/search/pages/ArtistDetailPage';
@@ -30,20 +29,54 @@ const queryClient = new QueryClient({
   },
 });
 
-// 页面组件导入（暂时用占位符，后续会替换为实际组件）
-// 公共页面
+// 更新为英文的占位符组件，附带"working on it"提示
+const Market = () => (
+  <Container maxWidth="lg">
+    <Box sx={{ my: 6, textAlign: 'center' }}>
+      <Paper elevation={2} sx={{ p: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Market Data
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
+          We're working on this feature. Stay tuned for market insights and price trends!
+        </Typography>
+      </Paper>
+    </Box>
+  </Container>
+);
 
-// 受保护页面
-const CollectionAdd = () => <div>添加新唱片</div>;
-const CollectionDetail = () => <div>唱片详情</div>;
-const CollectionEdit = () => <div>编辑唱片</div>;
-const AnalyticsValue = () => <div>价值分析</div>;
-const AnalyticsGenres = () => <div>风格分布</div>;
-const AnalyticsFormat = () => <div>格式比较</div>;
-const Market = () => <div>市场数据</div>;
-const MarketTrends = () => <div>价格趋势</div>;
-const Profile = () => <div>用户个人资料</div>;
-const NotFound = () => <div>页面不存在</div>;
+const Profile = () => (
+  <Container maxWidth="lg">
+    <Box sx={{ my: 6, textAlign: 'center' }}>
+      <Paper elevation={2} sx={{ p: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          User Profile
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
+          We're working on this feature. Soon you'll be able to manage your profile settings here!
+        </Typography>
+      </Paper>
+    </Box>
+  </Container>
+);
+
+const NotFound = () => (
+  <Container maxWidth="lg">
+    <Box sx={{ my: 6, textAlign: 'center' }}>
+      <Paper elevation={2} sx={{ p: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Page Not Found
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
+          The page you're looking for doesn't exist or has been moved.
+        </Typography>
+        <Typography variant="body2" sx={{ mt: 3 }}>
+          Please check the URL or navigate back to the home page.
+        </Typography>
+      </Paper>
+    </Box>
+  </Container>
+);
 
 function App() {
   return (
@@ -77,30 +110,6 @@ function App() {
                   }
                 />
                 <Route
-                  path="collection/add"
-                  element={
-                    <ProtectedRoute>
-                      <CollectionAdd />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="collection/:id"
-                  element={
-                    <ProtectedRoute>
-                      <CollectionDetail />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="collection/:id/edit"
-                  element={
-                    <ProtectedRoute>
-                      <CollectionEdit />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
                   path="analytics"
                   element={
                     <ProtectedRoute>
@@ -109,42 +118,10 @@ function App() {
                   }
                 />
                 <Route
-                  path="analytics/value"
-                  element={
-                    <ProtectedRoute>
-                      <AnalyticsValue />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="analytics/genres"
-                  element={
-                    <ProtectedRoute>
-                      <AnalyticsGenres />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="analytics/format"
-                  element={
-                    <ProtectedRoute>
-                      <AnalyticsFormat />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
                   path="market"
                   element={
                     <ProtectedRoute>
                       <Market />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="market/trends"
-                  element={
-                    <ProtectedRoute>
-                      <MarketTrends />
                     </ProtectedRoute>
                   }
                 />
