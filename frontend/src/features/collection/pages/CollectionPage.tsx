@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Container, 
@@ -22,20 +22,39 @@ import {
   DialogActions,
   CircularProgress,
   Alert,
-  useTheme
+  useTheme,
+  TablePagination,
+  Menu,
+  MenuItem,
+  FormControl,
+  Select,
+  InputLabel,
+  SelectChangeEvent,
+  Stack,
+  ToggleButtonGroup,
+  ToggleButton
 } from '@mui/material';
 import { 
   Add as AddIcon, 
   Edit as EditIcon, 
   Delete as DeleteIcon, 
   Album as AlbumIcon,
-  OpenInNew as OpenInNewIcon
+  OpenInNew as OpenInNewIcon,
+  Sort as SortIcon,
+  ArrowUpward as ArrowUpwardIcon,
+  ArrowDownward as ArrowDownwardIcon
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, compareAsc, compareDesc } from 'date-fns';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { collectionApi, CollectionItem, UpdateCollectionParams, DeleteCollectionParams } from '../../../services/collectionApi';
 import CollectionForm, { CollectionFormData } from '../components/CollectionForm';
+
+// 排序字段类型
+type SortField = 'artist' | 'title' | 'purchase_date';
+
+// 排序方向类型
+type SortDirection = 'asc' | 'desc';
 
 // 安全地格式化价格
 const formatPrice = (price: any): string => {
@@ -76,6 +95,14 @@ const CollectionPage = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
+  // 分页状态
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  
+  // 排序状态
+  const [sortField, setSortField] = useState<SortField>('purchase_date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  
   // 获取收藏列表
   const { data, isLoading, error } = useQuery({
     queryKey: ['collection', user?.id],
@@ -102,6 +129,77 @@ const CollectionPage = () => {
       setDeleteDialogOpen(false);
     }
   });
+
+  // 排序并应用分页的数据
+  const sortedAndPaginatedItems = useMemo(() => {
+    if (!data?.data || !Array.isArray(data.data)) return [];
+    
+    // 首先克隆数据以避免修改原始数据
+    const items = [...data.data];
+    
+    // 根据所选字段和方向排序
+    items.sort((a, b) => {
+      switch (sortField) {
+        case 'artist':
+          return sortDirection === 'asc'
+            ? a.release.artist.localeCompare(b.release.artist)
+            : b.release.artist.localeCompare(a.release.artist);
+        
+        case 'title':
+          return sortDirection === 'asc'
+            ? a.release.title.localeCompare(b.release.title)
+            : b.release.title.localeCompare(a.release.title);
+        
+        case 'purchase_date':
+          try {
+            const dateA = parseISO(a.purchase_date);
+            const dateB = parseISO(b.purchase_date);
+            return sortDirection === 'asc'
+              ? compareAsc(dateA, dateB)
+              : compareDesc(dateA, dateB);
+          } catch (e) {
+            return 0;
+          }
+        
+        default:
+          return 0;
+      }
+    });
+    
+    // 应用分页
+    return items.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  }, [data?.data, sortField, sortDirection, page, rowsPerPage]);
+
+  // 处理页面变更
+  const handleChangePage = (
+    event: React.MouseEvent<HTMLButtonElement> | null,
+    newPage: number,
+  ) => {
+    setPage(newPage);
+  };
+
+  // 处理每页行数变更
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0); // 重置到第一页
+  };
+
+  // 处理排序字段变更
+  const handleSortFieldChange = (event: SelectChangeEvent) => {
+    setSortField(event.target.value as SortField);
+  };
+
+  // 处理排序方向变更
+  const handleSortDirectionChange = (
+    event: React.MouseEvent<HTMLElement>,
+    newDirection: SortDirection,
+  ) => {
+    if (newDirection !== null) {
+      setSortDirection(newDirection);
+    }
+  };
 
   // 处理编辑
   const handleEdit = (item: CollectionItem) => {
@@ -215,8 +313,56 @@ const CollectionPage = () => {
           </Paper>
         ) : (
           <Paper elevation={2}>
+            {/* 排序控制区域 */}
+            <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
+              <Stack 
+                direction={{ xs: 'column', sm: 'row' }} 
+                spacing={2} 
+                alignItems={{ xs: 'stretch', sm: 'center' }}
+              >
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel id="sort-field-label">Sort By</InputLabel>
+                  <Select
+                    labelId="sort-field-label"
+                    value={sortField}
+                    label="Sort By"
+                    onChange={handleSortFieldChange}
+                  >
+                    <MenuItem value="artist">Artist</MenuItem>
+                    <MenuItem value="title">Album Title</MenuItem>
+                    <MenuItem value="purchase_date">Purchase Date</MenuItem>
+                  </Select>
+                </FormControl>
+                
+                <ToggleButtonGroup
+                  value={sortDirection}
+                  exclusive
+                  onChange={handleSortDirectionChange}
+                  aria-label="sort direction"
+                  size="small"
+                >
+                  <ToggleButton value="asc" aria-label="ascending">
+                    <ArrowUpwardIcon fontSize="small" sx={{ mr: 0.5 }} />
+                    Ascending
+                  </ToggleButton>
+                  <ToggleButton value="desc" aria-label="descending">
+                    <ArrowDownwardIcon fontSize="small" sx={{ mr: 0.5 }} />
+                    Descending
+                  </ToggleButton>
+                </ToggleButtonGroup>
+                
+                <Typography variant="body2" color="text.secondary" sx={{ 
+                  ml: 'auto', 
+                  display: { xs: 'none', sm: 'block' } 
+                }}>
+                  {collectionItems.length} items in collection
+                </Typography>
+              </Stack>
+            </Box>
+            
+            {/* 列表 */}
             <List sx={{ width: '100%' }}>
-              {collectionItems.map((item, index) => (
+              {sortedAndPaginatedItems.map((item, index) => (
                 <Box key={item.collection_id}>
                   <ListItem
                     alignItems="flex-start"
@@ -313,10 +459,21 @@ const CollectionPage = () => {
                       }
                     />
                   </ListItem>
-                  {index < collectionItems.length - 1 && <Divider component="li" />}
+                  {index < sortedAndPaginatedItems.length - 1 && <Divider component="li" />}
                 </Box>
               ))}
             </List>
+            
+            {/* 分页控件 */}
+            <TablePagination
+              component="div"
+              count={collectionItems.length}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[5, 10, 25, 50]}
+            />
           </Paper>
         )}
       </Box>
