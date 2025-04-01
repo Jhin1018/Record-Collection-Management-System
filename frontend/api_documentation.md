@@ -164,13 +164,10 @@
 {
     "code": 200,
     "data": {
-        "labels": [
-            "Electronic"
-        ],
-        "data": [
-            2
-        ]
+        "total_value": "232.50",
+        "currency": "CAD"
     }
+}
 ```
 
 ## 3.2、按流派统计用户收藏分布
@@ -214,7 +211,7 @@
         "wantlist_id": 1,
         "release": {
             "id": 249508,
-            "title": "Heaven ‎– Deep Trance Essentials 2",
+            "title": "Heaven – Deep Trance Essentials 2",
             "artist": "Various",
             "year": 2004,
             "format": "Vinyl",

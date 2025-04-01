@@ -18,6 +18,7 @@ import ArtistDetailPage from './features/search/pages/ArtistDetailPage';
 import MasterVersionsPage from './features/search/pages/MasterVersionsPage';
 import CollectionPage from './features/collection/pages/CollectionPage';
 import WantlistPage from './features/wantlist/pages/WantListPage';
+import AnalyticsPage from './features/analytics/pages/AnalyticsPage';
 
 // 创建一个 React Query 客户端
 const queryClient = new QueryClient({
@@ -36,7 +37,6 @@ const queryClient = new QueryClient({
 const CollectionAdd = () => <div>添加新唱片</div>;
 const CollectionDetail = () => <div>唱片详情</div>;
 const CollectionEdit = () => <div>编辑唱片</div>;
-const Analytics = () => <div>数据分析</div>;
 const AnalyticsValue = () => <div>价值分析</div>;
 const AnalyticsGenres = () => <div>风格分布</div>;
 const AnalyticsFormat = () => <div>格式比较</div>;
@@ -104,7 +104,7 @@ function App() {
                   path="analytics"
                   element={
                     <ProtectedRoute>
-                      <Analytics />
+                      <AnalyticsPage />
                     </ProtectedRoute>
                   }
                 />
