@@ -129,7 +129,7 @@ class Collection(models.Model):
     release = models.ForeignKey(Release, on_delete=models.CASCADE)
     quantity = models.IntegerField(default=1)
     purchase_price = models.DecimalField(max_digits=10, decimal_places=2)
-    purchase_date = models.DateTimeField(auto_now_add=True,blank=True)
+    purchase_date = models.DateTimeField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
