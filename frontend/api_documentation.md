@@ -277,15 +277,23 @@
 **Success Response Example:**
 ```json
 {
-    "code": 200,
-    "data": [
-        {
-            "wantlist_id": 2,
-            "user": {
-                "id": 1,
-                "username": "testuser1",
-                "email": "test1@example.com"
-            }
+  "code": 200,
+  "data": {
+    "wantlist_id": 1,
+    "release": {
+      "id": 249508,
+      "title": "Heaven – Deep Trance Essentials 2",
+      "artist": "Various",
+      "year": 2004,
+      "format": "Vinyl",
+      "genres": [
+        "Electronic"
+      ]
+    },
+    "note": "like",
+    "added_date": "2025-03-30 05:58:51"
+  }
+}
 ```
 
 **Failure Response Example:**

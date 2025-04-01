@@ -28,6 +28,7 @@ import {
   Login as LoginIcon,
   PersonAdd as PersonAddIcon,
   Logout as LogoutIcon,
+  FavoriteBorder as WantlistIcon, // 新添加
 } from '@mui/icons-material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../features/auth/hooks/useAuth';
@@ -70,6 +71,7 @@ const AppHeader = () => {
 
   const protectedLinks = [
     { text: 'Collection', icon: <AlbumIcon />, path: '/collection' },
+    { text: 'Wantlist', icon: <WantlistIcon />, path: '/wantlist' }, // 新添加
     { text: 'Analytics', icon: <BarChartIcon />, path: '/analytics' },
     { text: 'Market', icon: <ShowChartIcon />, path: '/market' },
   ];

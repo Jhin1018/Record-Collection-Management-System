@@ -17,6 +17,7 @@ import MasterDetailPage from './features/search/pages/MasterDetailPage';
 import ArtistDetailPage from './features/search/pages/ArtistDetailPage';
 import MasterVersionsPage from './features/search/pages/MasterVersionsPage';
 import CollectionPage from './features/collection/pages/CollectionPage';
+import WantlistPage from './features/wantlist/pages/WantListPage';
 
 // 创建一个 React Query 客户端
 const queryClient = new QueryClient({
@@ -152,6 +153,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <Profile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="wantlist"
+                  element={
+                    <ProtectedRoute>
+                      <WantlistPage />
                     </ProtectedRoute>
                   }
                 />

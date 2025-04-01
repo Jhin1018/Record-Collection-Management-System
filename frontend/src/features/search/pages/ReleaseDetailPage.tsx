@@ -27,6 +27,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  TextField,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -44,6 +45,7 @@ import ImageCarousel from '../components/ImageCarousel';
 import { format } from 'date-fns';
 import { collectionApi, AddToCollectionParams } from '../../../services/collectionApi';
 import CollectionForm, { CollectionFormData } from '../../collection/components/CollectionForm';
+import { wantlistApi, AddToWantlistParams } from '../../../services/wantlistApi';
 
 const ReleaseDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -54,26 +56,23 @@ const ReleaseDetailPage = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { isAuthenticated, user } = useAuth();
   
-  // 只保留对话框打开关闭状态
   const [collectionDialog, setCollectionDialog] = useState(false);
+  const [wantlistDialog, setWantlistDialog] = useState(false);
+  const [wantlistNote, setWantlistNote] = useState('');
 
-  // 获取 queryClient
   const queryClient = useQueryClient();
 
-  // 获取发行版详情
   const { data: release, isLoading, error } = useQuery({
     queryKey: ['release', releaseId],
     queryFn: () => discogsApi.getRelease(releaseId),
     enabled: !!releaseId,
   });
 
-  // 添加到收藏的mutation
   const addToCollectionMutation = useMutation({
     mutationFn: (params: AddToCollectionParams) => collectionApi.addToCollection(params),
     onSuccess: (data) => {
       setCollectionDialog(false);
       
-      // 使 collection 查询缓存失效
       if (user?.id) {
         queryClient.invalidateQueries({ queryKey: ['collection', user.id] });
       }
@@ -93,7 +92,31 @@ const ReleaseDetailPage = () => {
     }
   });
 
-  // 处理添加到收藏
+  const addToWantlistMutation = useMutation({
+    mutationFn: (params: AddToWantlistParams) => wantlistApi.addToWantlist(params),
+    onSuccess: (data) => {
+      setWantlistDialog(false);
+      setWantlistNote('');
+      
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: ['wantlist', user.id] });
+      }
+      
+      setSnackbar({
+        open: true,
+        message: 'Added to wantlist successfully',
+        severity: 'success'
+      });
+    },
+    onError: (error: any) => {
+      setSnackbar({
+        open: true,
+        message: error.error || 'Failed to add to wantlist',
+        severity: 'error'
+      });
+    }
+  });
+
   const handleAddToCollection = () => {
     if (!isAuthenticated) {
       setSnackbar({
@@ -104,52 +127,64 @@ const ReleaseDetailPage = () => {
       return;
     }
     
-    // 打开添加收藏对话框
     setCollectionDialog(true);
   };
 
-  // 处理添加到愿望清单 - 临时占位实现
-const handleAddToWantlist = () => {
-  if (!isAuthenticated) {
-    setSnackbar({
-      open: true,
-      message: 'Please login to add items to your wantlist',
-      severity: 'info'
-    });
-    return;
-  }
-  
-  // 临时通知用户此功能尚未实现
-  setSnackbar({
-    open: true,
-    message: 'Wantlist feature is coming soon!',
-    severity: 'info'
-  });
-};
+  const handleAddToWantlist = () => {
+    if (!isAuthenticated) {
+      setSnackbar({
+        open: true,
+        message: 'Please login to add items to your wantlist',
+        severity: 'info'
+      });
+      return;
+    }
+    
+    setWantlistDialog(true);
+  };
 
-  // 关闭添加收藏对话框
   const handleCloseCollectionDialog = () => {
     setCollectionDialog(false);
   };
 
-  // 处理跳转到主版本
+  const handleCloseWantlistDialog = () => {
+    setWantlistDialog(false);
+    setWantlistNote('');
+  };
+
+  const handleSubmitWantlist = () => {
+    if (!user?.id) {
+      setSnackbar({
+        open: true,
+        message: 'User information not available',
+        severity: 'error'
+      });
+      return;
+    }
+
+    const wantlistData: AddToWantlistParams = {
+      release_id: releaseId,
+      user_id: user.id,
+      note: wantlistNote || undefined
+    };
+
+    addToWantlistMutation.mutate(wantlistData);
+  };
+
   const handleGoToMaster = () => {
     if (release?.master_id) {
       navigate(`/search/master/${release.master_id}`);
     }
   };
 
-  // 处理返回
   const handleGoBack = () => {
     navigate(-1);
   };
 
-  // 关闭提示消息
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   };
 
-  // 加载中状态
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', my: 8 }}>
@@ -158,7 +193,6 @@ const handleAddToWantlist = () => {
     );
   }
 
-  // 错误状态
   if (error || !release) {
     return (
       <Container maxWidth="lg">
@@ -181,15 +215,12 @@ const handleAddToWantlist = () => {
     );
   }
 
-  // 提取艺术家名称
   const artistNames = release.artists?.map(artist => artist.name).join(', ') || 'Unknown Artist';
   
-  // 获取主要图片URL
   const mainImageUrl = release.images && release.images.length > 0
     ? release.images[0].uri
     : release.thumb || '/assets/record-placeholder.png';
 
-  // 提取格式信息
   const formatInfo = release.formats?.map(format => {
     const desc = format.descriptions?.join(', ') || '';
     return `${format.name} ${format.qty && format.qty !== '1' ? `(${format.qty}x)` : ''} ${desc ? `- ${desc}` : ''}`;
@@ -198,7 +229,6 @@ const handleAddToWantlist = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ my: 3 }}>
-        {/* 导航按钮 */}
         <Button 
           startIcon={<ArrowBackIcon />} 
           onClick={handleGoBack}
@@ -208,7 +238,6 @@ const handleAddToWantlist = () => {
         </Button>
 
         <Paper elevation={2} sx={{ p: { xs: 2, md: 3 }, borderRadius: 2, mb: 4 }}>
-          {/* 标题和艺术家信息 */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="h4" component="h1" gutterBottom>
               {release.title}
@@ -219,11 +248,9 @@ const handleAddToWantlist = () => {
             </Typography>
           </Box>
 
-          {/* 基本信息表格 - 现在放在轮播图上方 */}
           <Box sx={{ mb: 3 }}>
             <Table size="small">
               <TableBody>
-                {/* 发行日期 - 带格式化 */}
                 {(release.released || release.year) && (
                   <TableRow>
                     <TableCell 
@@ -234,10 +261,8 @@ const handleAddToWantlist = () => {
                     </TableCell>
                     <TableCell sx={{ py: 1 }}>
                       {release.released ? 
-                        // 尝试格式化完整日期
                         (() => {
                           try {
-                            // 如果是有效日期，格式化为 "May 12, 1977"
                             const date = new Date(release.released);
                             if (!isNaN(date.getTime())) {
                               return date.toLocaleDateString('en-US', { 
@@ -246,7 +271,6 @@ const handleAddToWantlist = () => {
                                 day: 'numeric' 
                               });
                             }
-                            // 否则直接显示原始值
                             return release.released;
                           } catch (e) {
                             return release.released;
@@ -258,7 +282,6 @@ const handleAddToWantlist = () => {
                   </TableRow>
                 )}
                 
-                {/* 发行国家 */}
                 {release.country && (
                   <TableRow>
                     <TableCell 
@@ -271,7 +294,6 @@ const handleAddToWantlist = () => {
                   </TableRow>
                 )}
                 
-                {/* 格式 */}
                 <TableRow>
                   <TableCell 
                     component="th" 
@@ -282,7 +304,6 @@ const handleAddToWantlist = () => {
                   <TableCell sx={{ py: 1 }}>{formatInfo}</TableCell>
                 </TableRow>
                 
-                {/* 唱片公司和编号 */}
                 {release.labels && release.labels.length > 0 && (
                   <TableRow>
                     <TableCell 
@@ -302,7 +323,6 @@ const handleAddToWantlist = () => {
                   </TableRow>
                 )}
                 
-                {/* ID */}
                 <TableRow>
                   <TableCell 
                     component="th" 
@@ -329,7 +349,6 @@ const handleAddToWantlist = () => {
             </Table>
           </Box>
 
-          {/* 图片轮播 - 现在占据整个页面宽度 */}
           <Box sx={{ mb: 3 }}>
             {release.images && release.images.length > 0 ? (
               <ImageCarousel images={release.images} />
@@ -349,7 +368,6 @@ const handleAddToWantlist = () => {
             )}
           </Box>
 
-          {/* 操作按钮 - 居中显示 */}
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'center', 
@@ -376,7 +394,6 @@ const handleAddToWantlist = () => {
             </Button>
           </Box>
 
-          {/* 跳转到 Master Release - 也居中显示 */}
           {release.master_id && (
             <Box sx={{ 
               display: 'flex',
@@ -394,7 +411,6 @@ const handleAddToWantlist = () => {
             </Box>
           )}
 
-          {/* 流派和风格 */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
               Genres & Styles
@@ -419,7 +435,6 @@ const handleAddToWantlist = () => {
             </Box>
           </Box>
 
-          {/* 曲目列表 */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
               Tracklist
@@ -441,7 +456,6 @@ const handleAddToWantlist = () => {
                     alignItems: 'center',
                     flexWrap: 'wrap'
                   }}>
-                    {/* 位置编号 */}
                     <Typography 
                       sx={{ 
                         width: 40, 
@@ -453,7 +467,6 @@ const handleAddToWantlist = () => {
                       {track.position || (index + 1)}
                     </Typography>
                     
-                    {/* 曲目标题 */}
                     <Typography 
                       sx={{ 
                         flex: 1,
@@ -472,7 +485,6 @@ const handleAddToWantlist = () => {
                       )}
                     </Typography>
                     
-                    {/* 时长 */}
                     {track.duration && (
                       <Typography 
                         sx={{ 
@@ -490,7 +502,6 @@ const handleAddToWantlist = () => {
             </List>
           </Box>
 
-          {/* 备注 */}
           {release.notes && (
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -513,7 +524,6 @@ const handleAddToWantlist = () => {
         </Paper>
       </Box>
 
-      {/* 添加收藏对话框 */}
       <Dialog 
         open={collectionDialog} 
         onClose={handleCloseCollectionDialog}
@@ -546,7 +556,6 @@ const handleAddToWantlist = () => {
             releaseArtist={artistNames}
             releaseYear={release.year}
             onSubmit={(formData: CollectionFormData) => {
-              // 确保用户已登录且有 ID
               if (!user?.id) {
                 setSnackbar({
                   open: true,
@@ -556,7 +565,6 @@ const handleAddToWantlist = () => {
                 return;
               }
 
-              // 准备提交数据
               const collectionData: AddToCollectionParams = {
                 release_id: releaseId,
                 user_id: user.id,
@@ -568,7 +576,6 @@ const handleAddToWantlist = () => {
                 description: formData.description || undefined,
               };
 
-              // 提交数据
               addToCollectionMutation.mutate(collectionData);
             }}
             onCancel={handleCloseCollectionDialog}
@@ -578,7 +585,67 @@ const handleAddToWantlist = () => {
         </DialogContent>
       </Dialog>
 
-      {/* 消息提示 */}
+      <Dialog
+        open={wantlistDialog}
+        onClose={handleCloseWantlistDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Add to Wantlist
+          <IconButton
+            aria-label="close"
+            onClick={handleCloseWantlistDialog}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              {release.title}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {artistNames}
+              {release.year ? ` (${release.year})` : ''}
+            </Typography>
+          </Box>
+          
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Add a note about why you want this record (optional)
+          </Typography>
+          
+          <TextField
+            label="Note"
+            multiline
+            rows={4}
+            fullWidth
+            value={wantlistNote}
+            onChange={(e) => setWantlistNote(e.target.value)}
+            placeholder="E.g., Looking for original pressing, Needed to complete collection..."
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseWantlistDialog}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            startIcon={<FavoriteIcon />}
+            onClick={handleSubmitWantlist}
+            disabled={addToWantlistMutation.isPending}
+          >
+            {addToWantlistMutation.isPending ? 'Adding...' : 'Add to Wantlist'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
