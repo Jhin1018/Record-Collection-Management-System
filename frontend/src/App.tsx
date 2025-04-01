@@ -16,6 +16,7 @@ import ReleaseDetailPage from './features/search/pages/ReleaseDetailPage';
 import MasterDetailPage from './features/search/pages/MasterDetailPage';
 import ArtistDetailPage from './features/search/pages/ArtistDetailPage';
 import MasterVersionsPage from './features/search/pages/MasterVersionsPage';
+import CollectionPage from './features/collection/pages/CollectionPage';
 
 // 创建一个 React Query 客户端
 const queryClient = new QueryClient({
@@ -31,7 +32,6 @@ const queryClient = new QueryClient({
 // 公共页面
 
 // 受保护页面
-const Collection = () => <div>收藏页</div>;
 const CollectionAdd = () => <div>添加新唱片</div>;
 const CollectionDetail = () => <div>唱片详情</div>;
 const CollectionEdit = () => <div>编辑唱片</div>;
@@ -71,7 +71,7 @@ function App() {
                   path="collection"
                   element={
                     <ProtectedRoute>
-                      <Collection />
+                      <CollectionPage />
                     </ProtectedRoute>
                   }
                 />

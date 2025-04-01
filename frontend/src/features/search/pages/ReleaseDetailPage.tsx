@@ -23,6 +23,10 @@ import {
   Snackbar,
   List,
   ListItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -30,11 +34,16 @@ import {
   OpenInNew as OpenInNewIcon,
   Album as AlbumIcon,
   ArrowBack as ArrowBackIcon,
+  Close as CloseIcon,
+  Save as SaveIcon,
 } from '@mui/icons-material';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { discogsApi, ReleaseDetails } from '../../../services/discogsApi';
 import { useAuth } from '../../../features/auth/hooks/useAuth';
 import ImageCarousel from '../components/ImageCarousel';
+import { format } from 'date-fns';
+import { collectionApi, AddToCollectionParams } from '../../../services/collectionApi';
+import CollectionForm, { CollectionFormData } from '../../collection/components/CollectionForm';
 
 const ReleaseDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,13 +52,45 @@ const ReleaseDetailPage = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  
+  // 只保留对话框打开关闭状态
+  const [collectionDialog, setCollectionDialog] = useState(false);
+
+  // 获取 queryClient
+  const queryClient = useQueryClient();
 
   // 获取发行版详情
   const { data: release, isLoading, error } = useQuery({
     queryKey: ['release', releaseId],
     queryFn: () => discogsApi.getRelease(releaseId),
     enabled: !!releaseId,
+  });
+
+  // 添加到收藏的mutation
+  const addToCollectionMutation = useMutation({
+    mutationFn: (params: AddToCollectionParams) => collectionApi.addToCollection(params),
+    onSuccess: (data) => {
+      setCollectionDialog(false);
+      
+      // 使 collection 查询缓存失效
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: ['collection', user.id] });
+      }
+      
+      setSnackbar({
+        open: true,
+        message: 'Added to collection successfully',
+        severity: 'success'
+      });
+    },
+    onError: (error: any) => {
+      setSnackbar({
+        open: true,
+        message: error.error || 'Failed to add to collection',
+        severity: 'error'
+      });
+    }
   });
 
   // 处理添加到收藏
@@ -63,31 +104,32 @@ const ReleaseDetailPage = () => {
       return;
     }
     
-    // 占位逻辑 - 后续会实现真正的添加功能
-    setSnackbar({
-      open: true,
-      message: 'Added to collection successfully',
-      severity: 'success'
-    });
+    // 打开添加收藏对话框
+    setCollectionDialog(true);
   };
 
-  // 处理添加到愿望清单
-  const handleAddToWantlist = () => {
-    if (!isAuthenticated) {
-      setSnackbar({
-        open: true,
-        message: 'Please login to add items to your wantlist',
-        severity: 'info'
-      });
-      return;
-    }
-    
-    // 占位逻辑 - 后续会实现真正的添加功能
+  // 处理添加到愿望清单 - 临时占位实现
+const handleAddToWantlist = () => {
+  if (!isAuthenticated) {
     setSnackbar({
       open: true,
-      message: 'Added to wantlist successfully',
-      severity: 'success'
+      message: 'Please login to add items to your wantlist',
+      severity: 'info'
     });
+    return;
+  }
+  
+  // 临时通知用户此功能尚未实现
+  setSnackbar({
+    open: true,
+    message: 'Wantlist feature is coming soon!',
+    severity: 'info'
+  });
+};
+
+  // 关闭添加收藏对话框
+  const handleCloseCollectionDialog = () => {
+    setCollectionDialog(false);
   };
 
   // 处理跳转到主版本
@@ -470,6 +512,71 @@ const ReleaseDetailPage = () => {
           )}
         </Paper>
       </Box>
+
+      {/* 添加收藏对话框 */}
+      <Dialog 
+        open={collectionDialog} 
+        onClose={handleCloseCollectionDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Add to Collection
+          <IconButton
+            aria-label="close"
+            onClick={handleCloseCollectionDialog}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <CollectionForm
+            initialData={{
+              quantity: 1,
+              purchase_price: '',
+              purchase_date: new Date(),
+              description: '',
+            }}
+            releaseTitle={release.title}
+            releaseArtist={artistNames}
+            releaseYear={release.year}
+            onSubmit={(formData: CollectionFormData) => {
+              // 确保用户已登录且有 ID
+              if (!user?.id) {
+                setSnackbar({
+                  open: true,
+                  message: 'User information not available',
+                  severity: 'error'
+                });
+                return;
+              }
+
+              // 准备提交数据
+              const collectionData: AddToCollectionParams = {
+                release_id: releaseId,
+                user_id: user.id,
+                quantity: formData.quantity,
+                purchase_price: typeof formData.purchase_price === 'string' 
+                  ? parseFloat(formData.purchase_price) 
+                  : formData.purchase_price,
+                purchase_date: format(formData.purchase_date, 'yyyy-MM-dd HH:mm:ss'),
+                description: formData.description || undefined,
+              };
+
+              // 提交数据
+              addToCollectionMutation.mutate(collectionData);
+            }}
+            onCancel={handleCloseCollectionDialog}
+            isSubmitting={addToCollectionMutation.isPending}
+            submitLabel="Save to Collection"
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* 消息提示 */}
       <Snackbar
