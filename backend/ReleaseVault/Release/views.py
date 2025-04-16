@@ -696,7 +696,7 @@ class WantlistView(APIView):
             })
 
     def get(self, request):
-        """Get user's wantlist"""
+        """Get all wantlist records for a user"""
         try:
             user_id = request.GET.get('user_id')
             if not user_id:
@@ -705,7 +705,7 @@ class WantlistView(APIView):
                     'error': 'user_id is required'
                 })
 
-            # Check if user exists
+            # Check if the user exists
             try:
                 user = User.objects.get(id=user_id)
             except User.DoesNotExist:
@@ -714,46 +714,100 @@ class WantlistView(APIView):
                     'error': 'User not found'
                 })
 
-            # Get user's wantlist, optimize query with select_related
-            wantlists = Wantlist.objects.filter(user_id=user_id).select_related(
-                'release', 
-                'release__artist',
-                'user'
-            ).prefetch_related(
-                'release__releasegenre_set__genre'
-            ).order_by('-added_date')
+            # Get current time
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-            data = []
+            # Get user's wantlist records with release information
+            wantlists = Wantlist.objects.filter(
+                user_id=user_id
+            ).select_related(
+                'release'
+            )
+
+            # Prepare response data
+            wantlist_data = []
+            token = "AnMRkqJdiLfntPkAAfXAwObkxZCLVTgmXSncRdPt"
+            headers = {
+                'Authorization': f'Discogs token={token}',
+                'User-Agent': 'ReleaseVault/1.0'
+            }
+
             for wantlist in wantlists:
-                # Get release genre information
-                genres = [
-                    rg.genre.genre_name 
-                    for rg in wantlist.release.releasegenre_set.all()
-                ]
+                # Get release information from Discogs API using release.discogs_id
+                if not wantlist.release.discogs_id:
+                    # If discogs_id is not set, skip price check
+                    wantlist_data.append({
+                        'wantlist_id': wantlist.id,
+                        'release': {
+                            'id': wantlist.release.id,
+                            'title': wantlist.release.title,
+                            'artist': wantlist.release.artist.artist_name if wantlist.release.artist else None,
+                            'year': wantlist.release.release_year,
+                            'format': wantlist.release.format
+                        },
+                        'note': wantlist.note,
+                        'added_date': wantlist.added_date.strftime('%Y-%m-%d %H:%M:%S'),
+                        'market_price_cad': 0.00,
+                        'num_for_sale': 0,
+                        'error': 'No Discogs ID available',
+                        'request_time': current_time
+                    })
+                    continue
 
-                data.append({
-                    'wantlist_id': wantlist.id,
-                    'user': {
-                        'id': wantlist.user.id,
-                        'username': wantlist.user.username,
-                        'email': wantlist.user.email
-                    },
-                    'release': {
-                        'id': wantlist.release.id,
-                        'title': wantlist.release.title,
-                        'artist': wantlist.release.artist.artist_name if wantlist.release.artist else None,
-                        'year': wantlist.release.release_year,
-                        'format': wantlist.release.format,
-                        'cover_url': wantlist.release.cover_url,
-                        'genres': genres
-                    },
-                    'note': wantlist.note,
-                    'added_date': wantlist.added_date.strftime('%Y-%m-%d %H:%M:%S')
-                })
+                url = f'https://api.discogs.com/releases/{wantlist.release.discogs_id}'
+                response = requests.get(url, headers=headers)
+
+                if response.status_code == 200:
+                    release_data = response.json()
+                    # Get the lowest price from the marketplace (already in CAD)
+                    lowest_price = release_data.get('lowest_price')
+                    if lowest_price is not None:
+                        try:
+                            market_price_cad = round(float(lowest_price), 2)
+                        except (ValueError, TypeError):
+                            market_price_cad = 0.00
+                    else:
+                        market_price_cad = 0.00
+
+                    wantlist_data.append({
+                        'wantlist_id': wantlist.id,
+                        'release': {
+                            'id': wantlist.release.id,
+                            'title': wantlist.release.title,
+                            'artist': wantlist.release.artist.artist_name if wantlist.release.artist else None,
+                            'year': wantlist.release.release_year,
+                            'format': wantlist.release.format
+                        },
+                        'note': wantlist.note,
+                        'added_date': wantlist.added_date.strftime('%Y-%m-%d %H:%M:%S'),
+                        'market_price_cad': market_price_cad,
+                        'num_for_sale': release_data.get('num_for_sale', 0),
+                        'community_have': release_data.get('community', {}).get('have', 0),
+                        'community_want': release_data.get('community', {}).get('want', 0),
+                        'request_time': current_time
+                    })
+                else:
+                    # If API request fails, still include the wantlist without price
+                    wantlist_data.append({
+                        'wantlist_id': wantlist.id,
+                        'release': {
+                            'id': wantlist.release.id,
+                            'title': wantlist.release.title,
+                            'artist': wantlist.release.artist.artist_name if wantlist.release.artist else None,
+                            'year': wantlist.release.release_year,
+                            'format': wantlist.release.format
+                        },
+                        'note': wantlist.note,
+                        'added_date': wantlist.added_date.strftime('%Y-%m-%d %H:%M:%S'),
+                        'market_price_cad': 0.00,
+                        'num_for_sale': 0,
+                        'error': f'API request failed: {response.text}',
+                        'request_time': current_time
+                    })
 
             return JsonResponse({
                 'code': 200,
-                'data': data
+                'data': wantlist_data
             })
 
         except Exception as e:
