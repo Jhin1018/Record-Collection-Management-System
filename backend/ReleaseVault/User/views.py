@@ -64,6 +64,65 @@ class UserView(APIView):
         res = {'code': 200, 'data': json.loads(data)}
         return JsonResponse(res)
 
+    def put(self, request):
+        """Update user information"""
+        try:
+            json_str = request.body
+            json_obj = json.loads(json_str)
+            user_id = json_obj.get('user_id')
+            new_username = json_obj.get('username')
+
+            if not user_id:
+                result = {'code': 400, 'error': 'user_id is required'}
+                return JsonResponse(result)
+
+            if not new_username:
+                result = {'code': 400, 'error': 'username is required'}
+                return JsonResponse(result)
+
+            # Check if user exists
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                result = {'code': 404, 'error': 'User not found'}
+                return JsonResponse(result)
+
+            # Check if new username is the same as current username
+            if user.username == new_username:
+                result = {
+                    'code': 200,
+                    'message': 'Username unchanged',
+                    'data': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email
+                    }
+                }
+                return JsonResponse(result)
+
+            # Check if new username is already taken by another user
+            if User.objects.filter(username=new_username).exclude(id=user_id).exists():
+                result = {'code': 400, 'error': 'username already exists'}
+                return JsonResponse(result)
+
+            # Update username
+            user.username = new_username
+            user.save()
+
+            result = {
+                'code': 200,
+                'message': 'Username updated successfully',
+                'data': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email
+                }
+            }
+            return JsonResponse(result)
+        except Exception as e:
+            result = {'code': 500, 'error': str(e)}
+            return JsonResponse(result)
+
 # token
 import json
 import time
