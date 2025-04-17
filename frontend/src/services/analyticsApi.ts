@@ -29,6 +29,12 @@ export interface PriceComparisonItem {
   community_want: number;
 }
 
+// 月度消费接口
+export interface MonthlySpendingData {
+  labels: string[];
+  data: number[];
+}
+
 // 分析数据 API
 export const analyticsApi = {
   // 获取收藏总价值
@@ -63,6 +69,24 @@ export const analyticsApi = {
       return response; // 这里直接返回完整响应，包括 code 和 data 字段
     } catch (error) {
       console.error('Error fetching price comparison data:', error);
+      throw error;
+    }
+  },
+
+  // 获取月度消费数据
+  getMonthlySpending: async (userId: number) => {
+    try {
+      const response = await api.get(`/data/monthly-spending?user_id=${userId}`);
+      console.log('Monthly spending API raw response:', response);
+      
+      // 确保我们返回正确的数据结构
+      // 根据API文档，应该返回 response.data.data
+      const data = response.data || null;
+      console.log('Monthly spending processed data:', data);
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching monthly spending data:', error);
       throw error;
     }
   }

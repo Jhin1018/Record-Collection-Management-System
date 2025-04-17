@@ -16,17 +16,36 @@ import {
   Album as AlbumIcon,
   AttachMoney as MoneyIcon,
   PieChart as PieChartIcon,
-  TrendingUp as TrendingUpIcon // 添加新图标
+  TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
-import { Pie } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Pie, Line } from 'react-chartjs-2'; // 导入Line图表
+import { 
+  Chart as ChartJS, 
+  ArcElement, 
+  Tooltip, 
+  Legend,
+  CategoryScale, // 导入折线图所需的组件
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title
+} from 'chart.js';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { collectionApi } from '../../../services/collectionApi';
 import { analyticsApi } from '../../../services/analyticsApi';
 
 // 注册 Chart.js 组件
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(
+  ArcElement, 
+  Tooltip, 
+  Legend, 
+  CategoryScale, 
+  LinearScale, 
+  PointElement, 
+  LineElement,
+  Title
+);
 
 const AnalyticsPage = () => {
   const theme = useTheme();
@@ -60,12 +79,22 @@ const AnalyticsPage = () => {
     enabled: !!user?.id,
   });
 
+  // 获取月度消费数据
+  const monthlySpendingQuery = useQuery({
+    queryKey: ['monthly-spending', user?.id],
+    queryFn: () => analyticsApi.getMonthlySpending(user?.id || 0),
+    enabled: !!user?.id,
+  });
+
   // 检查加载状态
-  const isLoading = collectionQuery.isLoading || valueQuery.isLoading || genreQuery.isLoading || priceComparisonQuery.isLoading;
+  const isLoading = collectionQuery.isLoading || valueQuery.isLoading || genreQuery.isLoading || 
+                    priceComparisonQuery.isLoading || monthlySpendingQuery.isLoading;
   
   // 检查错误状态
-  const hasError = collectionQuery.error || valueQuery.error || genreQuery.error || priceComparisonQuery.error;
-  const errorMessage = (collectionQuery.error || valueQuery.error || genreQuery.error || priceComparisonQuery.error)?.toString();
+  const hasError = collectionQuery.error || valueQuery.error || genreQuery.error || 
+                   priceComparisonQuery.error || monthlySpendingQuery.error;
+  const errorMessage = (collectionQuery.error || valueQuery.error || genreQuery.error || 
+                        priceComparisonQuery.error || monthlySpendingQuery.error)?.toString();
 
   // 获取收藏总量 - 兼容不同的数据格式
   const collectionCount = (() => {
@@ -157,7 +186,46 @@ const AnalyticsPage = () => {
     };
   };
 
+  // 准备折线图数据
+  const prepareMonthlySpendingData = (monthlyData?: any) => {
+    console.log("月度消费原始数据:", monthlyData);
+    
+    // 检查响应结构
+    if (!monthlyData) {
+      return null;
+    }
+    
+    // 安全地获取 labels 和 data，直接从数据中获取，不再嵌套查找
+    const labels = Array.isArray(monthlyData.labels) ? monthlyData.labels : [];
+    const data = Array.isArray(monthlyData.data) ? monthlyData.data : [];
+    
+    // 如果没有有效数据，返回 null
+    if (labels.length === 0 || data.length === 0) {
+      return null;
+    }
+    
+    return {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Monthly Spending (CAD)',
+          data: data,
+          borderColor: theme.palette.primary.main,
+          backgroundColor: `${theme.palette.primary.main}20`, // 添加透明度
+          borderWidth: 2,
+          fill: true,
+          tension: 0, // 改为0，使用直线而不是曲线
+          pointBackgroundColor: theme.palette.primary.main,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+        },
+      ],
+    };
+  };
+
   const chartData = prepareChartData(genreDistribution);
+  const monthlySpendingData = prepareMonthlySpendingData(monthlySpendingQuery.data);
 
   // 加载状态
   if (isLoading) {
@@ -242,7 +310,7 @@ const AnalyticsPage = () => {
             </Card>
           </Grid>
 
-          {/* 新增的总估值卡片 */}
+          {/* 总估值卡片 */}
           <Grid item xs={12} md={4}>
             <Card 
               elevation={3}
@@ -270,11 +338,12 @@ const AnalyticsPage = () => {
           </Grid>
         </Grid>
 
-        {/* 流派分布饼图 - 独立一行，居中展示 */}
+        {/* 流派分布饼图 */}
         <Paper 
           elevation={2} 
           sx={{ 
             p: 4,
+            mb: 4, // 添加下边距，与月度消费图表分隔
             backgroundColor: theme.palette.background.paper  
           }}
         >
@@ -293,10 +362,9 @@ const AnalyticsPage = () => {
               margin: '0 auto',
               p: 3,
               borderRadius: 2,
-              // 添加更浅的背景色
               backgroundColor: theme.palette.mode === 'dark'
-                ? theme.palette.grey[800] // 暗模式下使用更浅的灰色
-                : theme.palette.grey[50],  // 亮模式下使用近乎白色的灰色
+                ? theme.palette.grey[800]
+                : theme.palette.grey[50],
             }}
           >
             {chartData ? (
@@ -334,6 +402,91 @@ const AnalyticsPage = () => {
               <Typography color="text.secondary">
                 No genre data available
               </Typography>
+            )}
+          </Box>
+        </Paper>
+
+        {/* 月度消费折线图 */}
+        <Paper 
+          elevation={2} 
+          sx={{ 
+            p: 4,
+            backgroundColor: theme.palette.background.paper  
+          }}
+        >
+          <Typography variant="h5" gutterBottom align="center">
+            Monthly Spending
+          </Typography>
+          <Divider sx={{ mb: 4 }} />
+          
+          <Box 
+            sx={{ 
+              width: '100%', // 确保容器占满整个宽度
+              height: 300,
+              margin: '0 auto',
+              p: 3,
+              borderRadius: 2,
+              backgroundColor: theme.palette.mode === 'dark'
+                ? theme.palette.grey[800]
+                : theme.palette.grey[50],
+            }}
+          >
+            {monthlySpendingData ? (
+              <Line 
+                data={monthlySpendingData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: true,
+                  scales: {
+                    x: {
+                      grid: {
+                        display: true,
+                      },
+                      ticks: {
+                        maxRotation: 45,
+                        minRotation: 45,
+                      }
+                    },
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        callback: function(value) {
+                          return value;
+                        }
+                      }
+                    }
+                  },
+                  plugins: {
+                    legend: {
+                      display: true,
+                      position: 'top',
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: function(context) {
+                          const label = context.dataset.label || '';
+                          const value = context.parsed.y;
+                          return `${label}: CAD ${value.toFixed(2)}`;
+                        }
+                      }
+                    }
+                  },
+                  layout: {
+                    padding: {
+                      left: 10,
+                      right: 10
+                    }
+                  },
+                  resizeDelay: 100, // 添加调整大小的延迟，使图表调整更平滑
+                }}
+                style={{ width: '100%', height: '100%' }} // 直接在Line组件上设置样式
+              />
+            ) : (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                <Typography color="text.secondary">
+                  No monthly spending data available
+                </Typography>
+              </Box>
             )}
           </Box>
         </Paper>
