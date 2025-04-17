@@ -15,7 +15,8 @@ import {
 import { 
   Album as AlbumIcon,
   AttachMoney as MoneyIcon,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
+  TrendingUp as TrendingUpIcon // 添加新图标
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { Pie } from 'react-chartjs-2';
@@ -52,12 +53,19 @@ const AnalyticsPage = () => {
     enabled: !!user?.id,
   });
 
+  // 获取价格比较数据
+  const priceComparisonQuery = useQuery({
+    queryKey: ['price-comparison', user?.id],
+    queryFn: () => analyticsApi.getPriceComparison(user?.id || 0),
+    enabled: !!user?.id,
+  });
+
   // 检查加载状态
-  const isLoading = collectionQuery.isLoading || valueQuery.isLoading || genreQuery.isLoading;
+  const isLoading = collectionQuery.isLoading || valueQuery.isLoading || genreQuery.isLoading || priceComparisonQuery.isLoading;
   
   // 检查错误状态
-  const hasError = collectionQuery.error || valueQuery.error || genreQuery.error;
-  const errorMessage = (collectionQuery.error || valueQuery.error || genreQuery.error)?.toString();
+  const hasError = collectionQuery.error || valueQuery.error || genreQuery.error || priceComparisonQuery.error;
+  const errorMessage = (collectionQuery.error || valueQuery.error || genreQuery.error || priceComparisonQuery.error)?.toString();
 
   // 获取收藏总量 - 兼容不同的数据格式
   const collectionCount = (() => {
@@ -80,6 +88,25 @@ const AnalyticsPage = () => {
       return valueQuery.data;
     }
     return null;
+  })();
+
+  // 计算总估值
+  const totalEstimatedValue = (() => {
+    // 检查响应和数据是否存在
+    if (!priceComparisonQuery.data?.data) {
+      return null;
+    }
+
+    // 直接获取数据数组，根据API文档，数据直接位于data下
+    const items = priceComparisonQuery.data.data;
+    if (!Array.isArray(items) || items.length === 0) {
+      return null;
+    }
+    
+    // 对所有项目的估值进行求和
+    const sum = items.reduce((total, item) => total + item.estimated_value, 0);
+    // 返回格式化为保留两位小数的字符串
+    return sum.toFixed(2);
   })();
 
   // 直接使用 API 返回的数据
@@ -159,10 +186,10 @@ const AnalyticsPage = () => {
           Collection Analytics
         </Typography>
 
-        {/* 卡片区域 - 两张卡片各占一半 */}
-        <Grid container spacing={4} sx={{ mt: 2, mb: 4 }}>
+        {/* 卡片区域 - 三张卡片等分 */}
+        <Grid container spacing={3} sx={{ mt: 2, mb: 4 }}>
           {/* 收藏总量卡片 */}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <Card 
               elevation={3}
               sx={{ 
@@ -189,7 +216,7 @@ const AnalyticsPage = () => {
           </Grid>
 
           {/* 收藏总价值卡片 */}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <Card 
               elevation={3}
               sx={{ 
@@ -203,13 +230,40 @@ const AnalyticsPage = () => {
               <CardContent sx={{ flexGrow: 1, textAlign: 'center', py: 4 }}>
                 <MoneyIcon sx={{ fontSize: 48, mb: 2 }} />
                 <Typography variant="h6" gutterBottom>
-                  Total Value
+                  Total Purchase Value
                 </Typography>
                 <Typography variant="h3" component="div" sx={{ fontWeight: 'bold' }}>
                   {collectionValue ? `${collectionValue.currency} ${collectionValue.total_value}` : 'N/A'}
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 1 }}>
                   total purchase value
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* 新增的总估值卡片 */}
+          <Grid item xs={12} md={4}>
+            <Card 
+              elevation={3}
+              sx={{ 
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: theme.palette.info.light,
+                color: theme.palette.info.contrastText
+              }}
+            >
+              <CardContent sx={{ flexGrow: 1, textAlign: 'center', py: 4 }}>
+                <TrendingUpIcon sx={{ fontSize: 48, mb: 2 }} />
+                <Typography variant="h6" gutterBottom>
+                  Market Value
+                </Typography>
+                <Typography variant="h3" component="div" sx={{ fontWeight: 'bold' }}>
+                  {totalEstimatedValue ? `CAD ${totalEstimatedValue}` : 'N/A'}
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  current estimated value
                 </Typography>
               </CardContent>
             </Card>
