@@ -682,6 +682,7 @@ class WantlistView(APIView):
                         'artist': artist.artist_name,
                         'year': release.release_year,
                         'format': release.format,
+                        'cover_url': release.cover_url,
                         'genres': genres
                     },
                     'note': wantlist.note,
@@ -721,7 +722,11 @@ class WantlistView(APIView):
             wantlists = Wantlist.objects.filter(
                 user_id=user_id
             ).select_related(
-                'release'
+                'release',
+                'release__artist',
+                'user'
+            ).prefetch_related(
+                'release__releasegenre_set__genre'
             )
 
             # Prepare response data
@@ -733,17 +738,30 @@ class WantlistView(APIView):
             }
 
             for wantlist in wantlists:
+                # Get release genre information
+                genres = [
+                    rg.genre.genre_name 
+                    for rg in wantlist.release.releasegenre_set.all()
+                ]
+
                 # Get release information from Discogs API using release.discogs_id
                 if not wantlist.release.discogs_id:
                     # If discogs_id is not set, skip price check
                     wantlist_data.append({
                         'wantlist_id': wantlist.id,
+                        'user': {
+                            'id': wantlist.user.id,
+                            'username': wantlist.user.username,
+                            'email': wantlist.user.email
+                        },
                         'release': {
                             'id': wantlist.release.id,
                             'title': wantlist.release.title,
                             'artist': wantlist.release.artist.artist_name if wantlist.release.artist else None,
                             'year': wantlist.release.release_year,
-                            'format': wantlist.release.format
+                            'format': wantlist.release.format,
+                            'cover_url': wantlist.release.cover_url,
+                            'genres': genres
                         },
                         'note': wantlist.note,
                         'added_date': wantlist.added_date.strftime('%Y-%m-%d %H:%M:%S'),
@@ -771,12 +789,19 @@ class WantlistView(APIView):
 
                     wantlist_data.append({
                         'wantlist_id': wantlist.id,
+                        'user': {
+                            'id': wantlist.user.id,
+                            'username': wantlist.user.username,
+                            'email': wantlist.user.email
+                        },
                         'release': {
                             'id': wantlist.release.id,
                             'title': wantlist.release.title,
                             'artist': wantlist.release.artist.artist_name if wantlist.release.artist else None,
                             'year': wantlist.release.release_year,
-                            'format': wantlist.release.format
+                            'format': wantlist.release.format,
+                            'cover_url': wantlist.release.cover_url,
+                            'genres': genres
                         },
                         'note': wantlist.note,
                         'added_date': wantlist.added_date.strftime('%Y-%m-%d %H:%M:%S'),
@@ -790,12 +815,19 @@ class WantlistView(APIView):
                     # If API request fails, still include the wantlist without price
                     wantlist_data.append({
                         'wantlist_id': wantlist.id,
+                        'user': {
+                            'id': wantlist.user.id,
+                            'username': wantlist.user.username,
+                            'email': wantlist.user.email
+                        },
                         'release': {
                             'id': wantlist.release.id,
                             'title': wantlist.release.title,
                             'artist': wantlist.release.artist.artist_name if wantlist.release.artist else None,
                             'year': wantlist.release.release_year,
-                            'format': wantlist.release.format
+                            'format': wantlist.release.format,
+                            'cover_url': wantlist.release.cover_url,
+                            'genres': genres
                         },
                         'note': wantlist.note,
                         'added_date': wantlist.added_date.strftime('%Y-%m-%d %H:%M:%S'),
