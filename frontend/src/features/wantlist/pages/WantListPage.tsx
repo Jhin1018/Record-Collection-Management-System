@@ -33,7 +33,10 @@ import {
   CalendarToday as CalendarIcon,
   Notes as NotesIcon,
   Add as AddIcon,
-  Search as SearchIcon
+  Search as SearchIcon,
+  LocalOffer as PriceIcon,
+  People as CommunityIcon,
+  ShoppingCart as ForSaleIcon
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
@@ -173,6 +176,12 @@ const WantlistPage = () => {
     }
   });
 
+  // 格式化价格，确保显示两位小数
+  const formatPrice = (price: number | undefined) => {
+    if (price === undefined || price === null) return 'N/A';
+    return `$${price.toFixed(2)} CAD`;
+  };
+
   return (
     <Container maxWidth="lg">
       <Box sx={{ my: 4 }}>
@@ -295,6 +304,17 @@ const WantlistPage = () => {
                                 variant="outlined"
                               />
                             )}
+
+                            {/* 市场价格 */}
+                            {item.market_price_cad !== undefined && (
+                              <Chip 
+                                icon={<PriceIcon fontSize="small" />}
+                                label={`Market Lowest Price: ${formatPrice(item.market_price_cad)}`}
+                                size="small"
+                                variant="outlined"
+                                color="primary"
+                              />
+                            )}
                           </Box>
                           
                           {item.note && (
@@ -309,6 +329,44 @@ const WantlistPage = () => {
                               </Typography>
                             </Box>
                           )}
+                          
+                          {/* 社区和销售统计数据 */}
+                          <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {item.community_have !== undefined && (
+                              <Tooltip title="Number of users who have this record">
+                                <Chip
+                                  icon={<CommunityIcon fontSize="small" />}
+                                  label={`${item.community_have} Have`}
+                                  size="small"
+                                  variant="outlined"
+                                  sx={{ fontSize: '0.7rem' }}
+                                />
+                              </Tooltip>
+                            )}
+                            
+                            {item.community_want !== undefined && (
+                              <Tooltip title="Number of users who want this record">
+                                <Chip
+                                  label={`${item.community_want} Want`}
+                                  size="small"
+                                  variant="outlined"
+                                  sx={{ fontSize: '0.7rem' }}
+                                />
+                              </Tooltip>
+                            )}
+                            
+                            {item.num_for_sale !== undefined && (
+                              <Tooltip title="Number of copies for sale">
+                                <Chip
+                                  icon={<ForSaleIcon fontSize="small" />}
+                                  label={`${item.num_for_sale} For Sale`}
+                                  size="small"
+                                  variant="outlined"
+                                  sx={{ fontSize: '0.7rem' }}
+                                />
+                              </Tooltip>
+                            )}
+                          </Box>
                           
                           {item.release.genres && item.release.genres.length > 0 && (
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
@@ -347,21 +405,28 @@ const WantlistPage = () => {
         </DialogTitle>
         <DialogContent dividers>
           {selectedItem && (
-            <CollectionForm
-              initialData={{
-                quantity: 1,
-                purchase_price: '',
-                purchase_date: new Date(),
-                description: selectedItem.note || '',
-              }}
-              releaseTitle={selectedItem.release.title}
-              releaseArtist={selectedItem.release.artist}
-              releaseYear={selectedItem.release.year}
-              onSubmit={handleMoveToCollectionSubmit}
-              onCancel={() => setMoveDialogOpen(false)}
-              isSubmitting={moveToCollectionMutation.isPending}
-              submitLabel="Add to Collection"
-            />
+            <>
+              {selectedItem.market_price_cad !== undefined && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  Market Lowest Price: {formatPrice(selectedItem.market_price_cad)}
+                </Alert>
+              )}
+              <CollectionForm
+                initialData={{
+                  quantity: 1,
+                  purchase_price: selectedItem.market_price_cad ? String(selectedItem.market_price_cad) : '',
+                  purchase_date: new Date(),
+                  description: selectedItem.note || '',
+                }}
+                releaseTitle={selectedItem.release.title}
+                releaseArtist={selectedItem.release.artist}
+                releaseYear={selectedItem.release.year}
+                onSubmit={handleMoveToCollectionSubmit}
+                onCancel={() => setMoveDialogOpen(false)}
+                isSubmitting={moveToCollectionMutation.isPending}
+                submitLabel="Add to Collection"
+              />
+            </>
           )}
         </DialogContent>
       </Dialog>

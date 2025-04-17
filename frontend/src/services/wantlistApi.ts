@@ -14,6 +14,12 @@ export interface WantlistItem {
   };
   note: string;
   added_date: string;
+  // 新增市场价格相关字段
+  market_price_cad?: number;
+  num_for_sale?: number;
+  community_have?: number;
+  community_want?: number;
+  request_time?: string;
 }
 
 // 添加到心愿单的请求参数
