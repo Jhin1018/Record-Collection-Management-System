@@ -18,6 +18,7 @@ import MasterVersionsPage from './features/search/pages/MasterVersionsPage';
 import CollectionPage from './features/collection/pages/CollectionPage';
 import WantlistPage from './features/wantlist/pages/WantListPage';
 import AnalyticsPage from './features/analytics/pages/AnalyticsPage';
+import ProfilePage from './features/profile/pages/ProfilePage';
 
 // 创建一个 React Query 客户端
 const queryClient = new QueryClient({
@@ -39,21 +40,6 @@ const Market = () => (
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
           We're working on this feature. Stay tuned for market insights and price trends!
-        </Typography>
-      </Paper>
-    </Box>
-  </Container>
-);
-
-const Profile = () => (
-  <Container maxWidth="lg">
-    <Box sx={{ my: 6, textAlign: 'center' }}>
-      <Paper elevation={2} sx={{ p: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          User Profile
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
-          We're working on this feature. Soon you'll be able to manage your profile settings here!
         </Typography>
       </Paper>
     </Box>
@@ -129,7 +115,7 @@ function App() {
                   path="profile"
                   element={
                     <ProtectedRoute>
-                      <Profile />
+                      <ProfilePage />
                     </ProtectedRoute>
                   }
                 />
