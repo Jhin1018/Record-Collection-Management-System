@@ -12,6 +12,23 @@ export interface GenreDistributionData {
   data: number[];
 }
 
+// 价格比较项目接口
+export interface PriceComparisonItem {
+  release_id: number;
+  title: string;
+  purchase_price: number;
+  quantity: number;
+  purchase_date: string;
+  market_price_cad: number;
+  estimated_value: number;
+  total_spent: number;
+  gain_loss: number;
+  request_time: string;
+  num_for_sale: number;
+  community_have: number;
+  community_want: number;
+}
+
 // 分析数据 API
 export const analyticsApi = {
   // 获取收藏总价值
@@ -34,6 +51,18 @@ export const analyticsApi = {
       return response.data;
     } catch (error) {
       console.error('Error fetching genre distribution:', error);
+      throw error;
+    }
+  },
+
+  // 获取价格比较数据
+  getPriceComparison: async (userId: number) => {
+    try {
+      const response = await api.get(`/data/price-comparison?user_id=${userId}`);
+      console.log('Price comparison API response:', response);
+      return response; // 这里直接返回完整响应，包括 code 和 data 字段
+    } catch (error) {
+      console.error('Error fetching price comparison data:', error);
       throw error;
     }
   }

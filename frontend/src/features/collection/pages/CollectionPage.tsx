@@ -42,12 +42,17 @@ import {
   OpenInNew as OpenInNewIcon,
   Sort as SortIcon,
   ArrowUpward as ArrowUpwardIcon,
-  ArrowDownward as ArrowDownwardIcon
+  ArrowDownward as ArrowDownwardIcon,
+  CompareArrows as CompareArrowsIcon,
+  TrendingUp as TrendingUpIcon,
+  TrendingDown as TrendingDownIcon,
+  TrendingFlat as TrendingFlatIcon
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO, compareAsc, compareDesc } from 'date-fns';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { collectionApi, CollectionItem, UpdateCollectionParams, DeleteCollectionParams } from '../../../services/collectionApi';
+import { analyticsApi, PriceComparisonItem } from '../../../services/analyticsApi';
 import CollectionForm, { CollectionFormData } from '../components/CollectionForm';
 
 // 排序字段类型
@@ -103,11 +108,27 @@ const CollectionPage = () => {
   const [sortField, setSortField] = useState<SortField>('purchase_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   
+  // 价格比较状态
+  const [showPriceComparison, setShowPriceComparison] = useState(false);
+  
   // 获取收藏列表
   const { data, isLoading, error } = useQuery({
     queryKey: ['collection', user?.id],
     queryFn: () => collectionApi.getUserCollection(user?.id || 0),
     enabled: !!user?.id,
+  });
+
+  // 获取价格比较数据
+  const { 
+    data: priceComparisonData, 
+    isLoading: isLoadingPriceComparison, 
+    isFetching: isFetchingPriceComparison,
+    isError: isPriceComparisonError,
+    refetch: fetchPriceComparison
+  } = useQuery({
+    queryKey: ['priceComparison', user?.id],
+    queryFn: () => analyticsApi.getPriceComparison(user?.id || 0),
+    enabled: false, // 不自动请求，等待用户点击按钮
   });
 
   // 更新收藏的mutation
@@ -129,6 +150,30 @@ const CollectionPage = () => {
       setDeleteDialogOpen(false);
     }
   });
+
+  // 处理价格比较按钮点击 - 添加调试日志
+  const handlePriceCompareClick = () => {
+    console.log("Price compare button clicked");
+    setShowPriceComparison(true);
+    fetchPriceComparison().then(result => {
+      console.log("Price comparison data fetched:", result);
+    }).catch(error => {
+      console.error("Error fetching price comparison:", error);
+    });
+  };
+
+  // 创建价格比较数据映射 (release_id -> price comparison item)
+  const priceComparisonMap = useMemo(() => {
+    // 修改这里以正确处理 API 响应结构
+    if (!priceComparisonData?.data) return new Map();
+    
+    const map = new Map<number, PriceComparisonItem>();
+    priceComparisonData.data.forEach((item: PriceComparisonItem) => {
+      map.set(item.release_id, item);
+    });
+    
+    return map;
+  }, [priceComparisonData]);
 
   // 排序并应用分页的数据
   const sortedAndPaginatedItems = useMemo(() => {
@@ -249,6 +294,66 @@ const CollectionPage = () => {
     navigate('/search');
   };
 
+  // 渲染价格比较指示器
+  const renderPriceComparisonIndicator = (releaseId: number, purchasePrice: number) => {
+    const comparisonItem = priceComparisonMap.get(releaseId);
+    if (!comparisonItem) {
+      console.log(`No comparison data found for release ${releaseId}`);
+      return null;
+    }
+
+    console.log(`Rendering comparison for release ${releaseId}:`, comparisonItem);
+    
+    const marketPrice = comparisonItem.market_price_cad;
+    const gainLoss = comparisonItem.gain_loss;
+    const gainLossPercent = (gainLoss / purchasePrice) * 100;
+    
+    let color = theme.palette.info.main; // Default color
+    let icon = <TrendingFlatIcon fontSize="small" />;
+    
+    if (gainLoss > 0) {
+      color = theme.palette.success.main;
+      icon = <TrendingUpIcon fontSize="small" />;
+    } else if (gainLoss < 0) {
+      color = theme.palette.error.main;
+      icon = <TrendingDownIcon fontSize="small" />;
+    }
+
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        mt: 1,
+        maxWidth: { xs: '120px', sm: '170px' },  // 设置最大宽度，响应式适应不同屏幕
+        mr: 'auto'  // 确保靠左对齐
+      }}>
+        <Chip 
+          label={`Market: $${formatPrice(marketPrice)}`}
+          size="small"
+          sx={{ 
+            bgcolor: 'background.paper', 
+            borderColor: color,
+            color: color,
+            '& .MuiChip-label': { fontWeight: 500 }
+          }}
+          variant="outlined"
+        />
+        <Chip 
+          icon={icon}
+          label={`${gainLoss > 0 ? '+' : ''}${formatPrice(gainLoss)} (${gainLossPercent.toFixed(1)}%)`}
+          size="small"
+          sx={{ 
+            mt: 0.5,
+            bgcolor: 'background.paper',
+            borderColor: color,
+            color: color
+          }}
+          variant="outlined"
+        />
+      </Box>
+    );
+  };
+
   // 加载状态
   if (isLoading) {
     return (
@@ -285,14 +390,34 @@ const CollectionPage = () => {
           <Typography variant="h4" component="h1">
             Your Collection
           </Typography>
-          <Button 
-            variant="contained" 
-            startIcon={<AddIcon />}
-            onClick={handleAddNew}
-          >
-            Add New Record
-          </Button>
+          
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            {!isEmpty && (
+              <Button 
+                variant="outlined" 
+                color="primary"
+                startIcon={<CompareArrowsIcon />}
+                onClick={handlePriceCompareClick}
+                disabled={isFetchingPriceComparison}
+              >
+                {isFetchingPriceComparison ? 'Loading...' : 'Price Compare'}
+              </Button>
+            )}
+            <Button 
+              variant="contained" 
+              startIcon={<AddIcon />}
+              onClick={handleAddNew}
+            >
+              Add New Record
+            </Button>
+          </Box>
         </Box>
+
+        {isPriceComparisonError && showPriceComparison && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            Failed to load price comparison data. Please try again.
+          </Alert>
+        )}
 
         {isEmpty ? (
           <Paper sx={{ p: 4, textAlign: 'center' }}>
@@ -431,6 +556,13 @@ const CollectionPage = () => {
                               sx={{ mr: 1 }}
                             />
                           </Box>
+                          
+                          {/* 显示价格比较数据 */}
+                          {showPriceComparison && (
+                            <Box sx={{ mt: 1, pr: { xs: 11, sm: 14 } }}> {/* 添加右侧边距，为按钮腾出空间 */}
+                              {renderPriceComparisonIndicator(item.release.id, parsePrice(item.purchase_price))}
+                            </Box>
+                          )}
                           
                           {item.description && (
                             <Typography 
